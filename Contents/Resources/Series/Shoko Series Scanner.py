@@ -8,7 +8,7 @@ Prefs = {
     'Port': 8111,
     'Username': 'Default',
     'Password': '',
-    'IncludeOther': True
+    'IncludeOther': False
 }
 
 API_KEY = ''
@@ -115,6 +115,9 @@ def Scan(path, files, mediaList, subdirs, language=None, root=None):
             series_data = HttpReq("api/serie/fromep?id=%d&nocast=1&notag=1" % episode_data['id'])
             showTitle = series_data['name'].encode("utf-8") #no idea why I need to do this.
             Log.info('show title: %s', showTitle)
+            isMovie = int(try_get(series_data,"ismovie","0"))
+            if (isMovie == 1 and try_get(series_data, 'localsize', 1) > 1 and try_get(episode_data,'name','Complete Movie') != 'Complete Movie'):
+                isMovie = 0
 
             seasonNumber = 0
             seasonStr = try_get(episode_data, 'season', None)
@@ -128,9 +131,9 @@ def Scan(path, files, mediaList, subdirs, language=None, root=None):
                 if seasonNumber <= 0 and episode_data['eptype'] == 'Episode': seasonNumber = 1
                 elif seasonNumber > 0 and episode_data['eptype'] == 'Special': seasonNumber = 0
             
-            if seasonNumber <= 0 and Prefs['IncludeOther'] == False: continue #Ignore this by choice.
+            if seasonNumber < 0 and Prefs['IncludeOther'] == False: continue #Ignore this by choice.
             
-            if (series_data["ismovie"] == 1 and seasonNumber >= 1): continue # Ignore movies in preference for Shoko Movie Scanner, but keep specials as Plex sees specials as duplicate
+            if (isMovie == 1 and seasonNumber >= 1): continue # Ignore movies in preference for Shoko Movie Scanner, but keep specials as Plex sees specials as duplicate
             Log.info('season number: %s', seasonNumber)
             episodeNumber = int(episode_data['epnumber'])
             Log.info('episode number: %s', episodeNumber)
